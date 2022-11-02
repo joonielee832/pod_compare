@@ -112,19 +112,25 @@ class ProbabilisticRetinaNet(RetinaNet):
             return self.produce_raw_output(anchors, features)
 
         # Training and validation forward
-        pred_logits, pred_anchor_deltas, pred_logits_vars, pred_anchor_deltas_vars = self.head(features)
+        pred_logits, pred_anchor_deltas, pred_logits_vars, pred_anchor_deltas_vars = self.head(
+            features)
         # Transpose the Hi*Wi*A dimension to the middle:
-        pred_logits = [permute_to_N_HWA_K(x, self.num_classes) for x in pred_logits]
-        pred_anchor_deltas = [permute_to_N_HWA_K(x, 4) for x in pred_anchor_deltas]
+        pred_logits = [permute_to_N_HWA_K(
+            x, self.num_classes) for x in pred_logits]
+        pred_anchor_deltas = [permute_to_N_HWA_K(
+            x, 4) for x in pred_anchor_deltas]
 
         if pred_logits_vars is not None:
-            pred_logits_vars = [permute_to_N_HWA_K(x, self.num_classes) for x in pred_logits_vars]
+            pred_logits_vars = [permute_to_N_HWA_K(
+                x, self.num_classes) for x in pred_logits_vars]
         if pred_anchor_deltas_vars is not None:
-            pred_anchor_deltas_vars = [permute_to_N_HWA_K(x, self.bbox_cov_dims) for x in pred_anchor_deltas_vars]
+            pred_anchor_deltas_vars = [permute_to_N_HWA_K(
+                x, self.bbox_cov_dims) for x in pred_anchor_deltas_vars]
 
         if self.training:
             assert "instances" in batched_inputs[0], "Instance annotations are missing in training!"
-            gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
+            gt_instances = [x["instances"].to(
+                self.device) for x in batched_inputs]
 
             gt_classes, gt_boxes = self.label_anchors(
                 anchors, gt_instances)
@@ -154,7 +160,8 @@ class ProbabilisticRetinaNet(RetinaNet):
                     self.visualize_training(batched_inputs, results)
             return losses
         else:
-            results = self.inference(anchors, pred_logits, pred_anchor_deltas, images.image_sizes)
+            results = self.inference(
+                anchors, pred_logits, pred_anchor_deltas, images.image_sizes)
             processed_results = []
             for results_per_image, input_per_image, image_size in zip(
                 results, batched_inputs, images.image_sizes
@@ -191,16 +198,19 @@ class ProbabilisticRetinaNet(RetinaNet):
         num_images = len(gt_classes)
         gt_labels = torch.stack(gt_classes)  # (N, R)
         anchors = type(anchors[0]).cat(anchors).tensor  # (R, 4)
-        gt_anchor_deltas = [self.box2box_transform.get_deltas(anchors, k) for k in gt_boxes]
+        gt_anchor_deltas = [self.box2box_transform.get_deltas(
+            anchors, k) for k in gt_boxes]
         gt_anchor_deltas = torch.stack(gt_anchor_deltas)  # (N, R, 4)
 
         valid_mask = gt_labels >= 0
         pos_mask = (gt_labels >= 0) & (gt_labels != self.num_classes)
         num_pos_anchors = pos_mask.sum().item()
         get_event_storage().put_scalar("num_pos_anchors", num_pos_anchors / num_images)
-        self.loss_normalizer = self.loss_normalizer_momentum * self.loss_normalizer + (
-            1 - self.loss_normalizer_momentum
-        ) * max(num_pos_anchors, 1)
+        self.loss_normalizer = self._ema_update(
+            "loss_normalizer", max(num_pos_anchors, 1), 100)
+        # self.loss_normalizer = self.loss_normalizer_momentum * self.loss_normalizer + (
+        #     1 - self.loss_normalizer_momentum
+        # ) * max(num_pos_anchors, 1)
 
         # classification and regression loss
 
@@ -221,8 +231,8 @@ class ProbabilisticRetinaNet(RetinaNet):
                 pred_bbox_cov, dim=1)
 
         gt_classes_target = torch.nn.functional.one_hot(gt_labels[valid_mask], num_classes=self.num_classes + 1)[
-                           :, :-1
-                           ].to(pred_class_logits[0].dtype)  # no loss for the last (background) class
+            :, :-1
+        ].to(pred_class_logits[0].dtype)  # no loss for the last (background) class
 
         # Classification losses
         if self.compute_cls_var:
@@ -317,9 +327,12 @@ class ProbabilisticRetinaNet(RetinaNet):
                 beta=self.smooth_l1_beta,
                 reduction="sum",
             ) / max(1, self.loss_normalizer)
-            probabilistic_loss_weight = min(1.0, self.current_step/self.annealing_step)
-            probabilistic_loss_weight = (100**probabilistic_loss_weight-1.0)/(100.0-1.0)
-            loss_box_reg = (1.0 - probabilistic_loss_weight)*standard_regression_loss + probabilistic_loss_weight*loss_box_reg
+            probabilistic_loss_weight = min(
+                1.0, self.current_step/self.annealing_step)
+            probabilistic_loss_weight = (
+                100**probabilistic_loss_weight-1.0)/(100.0-1.0)
+            loss_box_reg = (1.0 - probabilistic_loss_weight) * \
+                standard_regression_loss + probabilistic_loss_weight*loss_box_reg
         else:
             # Standard regression loss in case no variance is needed to be
             # estimated
@@ -337,16 +350,21 @@ class ProbabilisticRetinaNet(RetinaNet):
         Given anchors and features, produces raw pre-nms output to be used for custom fusion operations.
         """
         # Perform inference run
-        pred_logits, pred_anchor_deltas, pred_logits_vars, pred_anchor_deltas_vars = self.head(features)
+        pred_logits, pred_anchor_deltas, pred_logits_vars, pred_anchor_deltas_vars = self.head(
+            features)
 
         # Transpose the Hi*Wi*A dimension to the middle:
-        pred_logits = [permute_to_N_HWA_K(x, self.num_classes) for x in pred_logits]
-        pred_anchor_deltas = [permute_to_N_HWA_K(x, 4) for x in pred_anchor_deltas]
+        pred_logits = [permute_to_N_HWA_K(
+            x, self.num_classes) for x in pred_logits]
+        pred_anchor_deltas = [permute_to_N_HWA_K(
+            x, 4) for x in pred_anchor_deltas]
 
         if pred_logits_vars is not None:
-            pred_logits_vars = [permute_to_N_HWA_K(x, self.num_classes) for x in pred_logits_vars]
+            pred_logits_vars = [permute_to_N_HWA_K(
+                x, self.num_classes) for x in pred_logits_vars]
         if pred_anchor_deltas_vars is not None:
-            pred_anchor_deltas_vars = [permute_to_N_HWA_K(x, self.bbox_cov_dims) for x in pred_anchor_deltas_vars]
+            pred_anchor_deltas_vars = [permute_to_N_HWA_K(
+                x, self.bbox_cov_dims) for x in pred_anchor_deltas_vars]
 
         # Create raw output dictionary
         raw_output = {'anchors': anchors}

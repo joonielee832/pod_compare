@@ -37,7 +37,8 @@ def retinanet_compute_cls_scores(input_matches, valid_idxs):
         -correct_multilabel_probs * torch.log(predicted_multilabel_probs)).sum(1)
 
     cls_ignorance_score_mean = predicted_log_likelihood_of_correct_category.mean()
-    output_dict.update({'ignorance_score_mean': cls_ignorance_score_mean.to(device).tolist()})
+    output_dict.update(
+        {'ignorance_score_mean': cls_ignorance_score_mean.to(device).tolist()})
 
     return output_dict
 
@@ -96,7 +97,6 @@ def compute_reg_scores_fn(false_negatives, valid_idxs):
 
     predicted_box_means = false_negatives['predicted_box_means'][valid_idxs]
     predicted_box_covars = false_negatives['predicted_box_covariances'][valid_idxs]
-
     predicted_multivariate_normal_dists = torch.distributions.multivariate_normal.MultivariateNormal(
         predicted_box_means, predicted_box_covars + 1e-2 * torch.eye(predicted_box_covars.shape[2]).to(device))
 

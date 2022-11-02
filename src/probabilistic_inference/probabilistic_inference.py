@@ -347,7 +347,6 @@ class RetinaNetProbabilisticPredictor(ProbabilisticPredictor):
             # have much less memory footprint. Keep 100 or less to maintain
             # reasonable runtime speed.
             cholesky_decomp = cat(all_predicted_boxes_cholesky)
-
             multivariate_normal_samples = torch.distributions.MultivariateNormal(
                 box_delta, scale_tril=cholesky_decomp)
 
