@@ -11,3 +11,5 @@ MODEL:
         BBOX_COV_LOSS:
             NAME: 'negative_log_likelihood'
             COVARIANCE_TYPE: 'diagonal' # One of the following: 'full', 'diagonal'
+
+OUTPUT_DIR: "/home/results/bayesod_pod"
