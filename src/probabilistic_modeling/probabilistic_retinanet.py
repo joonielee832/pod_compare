@@ -13,7 +13,7 @@ from detectron2.modeling.anchor_generator import build_anchor_generator
 from detectron2.modeling.meta_arch.build import META_ARCH_REGISTRY
 from detectron2.modeling.meta_arch.retinanet import RetinaNet, RetinaNetHead, permute_to_N_HWA_K
 from detectron2.modeling.postprocessing import detector_postprocess
-from detectron2.structures import Boxes
+from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 
 
 @META_ARCH_REGISTRY.register()
@@ -344,6 +344,17 @@ class ProbabilisticRetinaNet(RetinaNet):
             ) / max(1, self.loss_normalizer)
 
         return {"loss_cls": loss_cls, "loss_box_reg": loss_box_reg}
+
+    def inference(self, anchors, pred_logits, pred_anchor_deltas, image_sizes):
+        results: List[Instances] = []
+        for img_idx, image_size in enumerate(image_sizes):
+            scores_per_image = [x[img_idx].sigmoid_() for x in pred_logits]
+            deltas_per_image = [x[img_idx] for x in pred_anchor_deltas]
+            results_per_image = self.inference_single_image(
+                anchors, scores_per_image, deltas_per_image, image_size
+            )
+            results.append(results_per_image)
+        return results
 
     def produce_raw_output(self, anchors, features):
         """

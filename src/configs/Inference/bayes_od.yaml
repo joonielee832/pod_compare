@@ -8,3 +8,6 @@ PROBABILISTIC_INFERENCE:
         CLS_MERGE_MODE: 'max_score'  # 'bayesian_inference' or 'max_score'
         # 'bayesian_inference' or 'covariance_intersection'
         BOX_MERGE_MODE: 'bayesian_inference'
+
+MODEL:
+    WEIGHTS: "/home/submodules/pod_compare/data/BDD-Detection/retinanet/retinanet_R_50_FPN_1x_reg_cls_var/random_seed_0/model_0059999.pth"

@@ -172,7 +172,8 @@ def main(
             tp_cum_sum = torch.cumsum(sorted_gt_idxs_tp, 0)
             fp_cum_sum = torch.cumsum(sorted_gt_idxs_fp, 0)
             cls_u_errors = 0.5 * (sorted_gt_idxs_tp.sum(0) - tp_cum_sum) / \
-                sorted_gt_idxs_tp.sum(0) + 0.5 * fp_cum_sum / sorted_gt_idxs_fp.sum(0)
+                sorted_gt_idxs_tp.sum(0) + 0.5 * \
+                fp_cum_sum / sorted_gt_idxs_fp.sum(0)
             cls_min_u_error = cls_u_errors.min()
             cls_min_uncertainty_error_list.append(cls_min_u_error)
 
@@ -249,7 +250,7 @@ def main(
                 0)
 
             all_predicted_distributions = torch.distributions.multivariate_normal.MultivariateNormal(torch.zeros(
-                all_predicted_covars.shape[0:2]).to(device), all_predicted_covars + 1e-4 * torch.eye(all_predicted_covars.shape[2]).to(device))
+                all_predicted_covars.shape[0:2]).to(device), all_predicted_covars + 1e-2 * torch.eye(all_predicted_covars.shape[2]).to(device))
 
             all_predicted_reg_entropy = all_predicted_distributions.entropy()
             random_idxs = torch.randperm(all_predicted_reg_entropy.shape[0])
@@ -295,8 +296,10 @@ def main(
             ~torch.isnan(reg_min_u_error)].mean()
 
         table.add_row(['{:.4f}'.format(cls_marginal_calibration_error),
-                       '{:.4f}'.format(reg_expected_calibration_error.cpu().numpy().tolist()),
-                       '{:.4f}'.format(reg_maximum_calibration_error.cpu().numpy().tolist()),
+                       '{:.4f}'.format(
+                           reg_expected_calibration_error.cpu().numpy().tolist()),
+                       '{:.4f}'.format(
+                           reg_maximum_calibration_error.cpu().numpy().tolist()),
                        '{:.4f}'.format(cls_min_u_error.cpu().numpy().tolist()),
                        '{:.4f}'.format(reg_min_u_error.cpu().numpy().tolist())])
         print(table)
