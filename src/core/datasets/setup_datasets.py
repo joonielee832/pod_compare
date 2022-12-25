@@ -29,9 +29,9 @@ def setup_bdd_dataset(dataset_dir):
     test_image_dir = os.path.join(dataset_dir, 'images', '100k', 'val')
 
     train_json_annotations = os.path.join(
-        dataset_dir, 'labels', 'train_coco_format.json')
+        dataset_dir, 'jsons', 'det_train_cocofmt.json')
     test_json_annotations = os.path.join(
-        dataset_dir, 'labels', 'val_coco_format.json')
+        dataset_dir, 'jsons', 'det_val_cocofmt.json')
 
     register_coco_instances(
         "bdd_train",

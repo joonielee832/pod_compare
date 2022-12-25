@@ -9,13 +9,13 @@ MODEL:
       DEPTH: 50
 
     RETINANET:
-        NUM_CLASSES: 7
+        NUM_CLASSES: 10
 
 DATALOADER:
     NUM_WORKERS: 8  # Depends on the available memory
 
 SOLVER:
-    IMS_PER_BATCH: 8    #4 * num_gpus
+    IMS_PER_BATCH: 4    #4 * num_gpus
     BASE_LR: 0.0025  # Note that RetinaNet uses a different default learning rate
     STEPS: (60000, 80000)
     MAX_ITER: 90000
